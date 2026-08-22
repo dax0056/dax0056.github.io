@@ -94,7 +94,7 @@ export const AVAILABLE_TOOLS: AgentToolInfo[] = [
     description: 'Validates requested commands and processes against strict security allowlists.',
     simulatedInput: 'PolicyEngine.assert_allowed(binary="notepad.exe", flags=["read_only"])',
     simulatedOutput: 'Policy verdict: ALLOWED [Destructive command pattern filter: 0 matches]',
-    verificationCheck: 'Security allowlist check: 100% compliant with safety guardrails.'
+    verificationCheck: 'Security allowlist check: Validated against security policy rules.'
   },
   {
     id: 'audit-logger',
