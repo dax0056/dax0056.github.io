@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DAX Agent — 15s Cinematic Launch Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-obsidian: #07090E;
+      --bg-surface: #0E121A;
+      --bg-card: #141A24;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --cyan: #00F0FF;
+      --cyan-glow: rgba(0, 240, 255, 0.25);
+      --sapphire: #1E40AF;
+      --emerald: #10B981;
+      --emerald-glow: rgba(16, 185, 129, 0.3);
+      --text-main: #F1F5F9;
+      --text-muted: #64748B;
+      --text-dim: #475569;
+      --font-heading: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    body {
+      background-color: #030407;
+      color: var(--text-main);
+      font-family: var(--font-heading);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Video Player Container */
+    .stage-wrapper {
+      position: relative;
+      width: 1280px;
+      height: 720px;
+      background: var(--bg-obsidian);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 30px 100px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 240, 255, 0.05);
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+    }
+
+    /* Responsive scaling for different screen sizes */
+    @media (max-width: 1340px) {
+      .stage-wrapper {
+        transform: scale(0.85);
+      }
+    }
+    @media (max-width: 1100px) {
+      .stage-wrapper {
+        transform: scale(0.68);
+      }
+    }
+    @media (max-width: 880px) {
+      .stage-wrapper {
+        transform: scale(0.5);
+      }
+    }
+
+    /* Geometric Grid Background */
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.6;
+      z-index: 1;
+    }
+
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 40%, rgba(3, 4, 7, 0.95) 100%);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Canvas for animated particle graph */
+    #network-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Scene Container System */
+    .scene {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: scale(0.97);
+    }
+
+    .scene.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1);
+    }
+
+    /* SCENE 1 — INITIALIZATION */
+    .scene-1 .title-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--cyan);
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--cyan);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .scene-1 .brand-title {
+      font-size: 76px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      color: #FFFFFF;
+      text-shadow: 0 0 40px rgba(255, 255, 255, 0.2);
+      margin-bottom: 8px;
+    }
+
+    .scene-1 .brand-sub {
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--text-muted);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    .scene-1 .status-tag {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #94A3B8;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-color);
+      padding: 8px 20px;
+      border-radius: 8px;
+      letter-spacing: 1px;
+    }
+
+    /* SCENE 2 — PIPELINE */
+    .scene-2 {
+      justify-content: flex-start;
+      padding-top: 80px;
+    }
+
+    .goal-panel {
+      width: 100%;
+      max-width: 960px;
+      background: rgba(14, 18, 26, 0.9);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--cyan);
+      border-radius: 12px;
+      padding: 24px 32px;
+      margin-bottom: 48px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .goal-header {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .goal-text {
+      font-size: 22px;
+      font-weight: 600;
+      color: #F8FAFC;
+    }
+
+    .pipeline-container {
+      width: 100%;
+      max-width: 1040px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .pipeline-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      z-index: 2;
+    }
+
+    .node-box {
+      width: 115px;
+      height: 48px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+    }
+
+    .pipeline-node.active .node-box {
+      background: rgba(0, 240, 255, 0.12);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 20px var(--cyan-glow);
+    }
+
+    .pipeline-node.completed .node-box {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: var(--emerald);
+      color: var(--emerald);
+    }
+
+    .pipeline-connector {
+      flex: 1;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      position: relative;
+      margin: 0 4px;
+      margin-bottom: 20px;
+    }
+
+    .pipeline-connector .progress {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--cyan), var(--emerald));
+      transition: width 0.4s ease;
+      box-shadow: 0 0 10px var(--cyan);
+    }
+
+    /* SCENE 3 — TOOLING */
+    .scene-3 {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 32px;
+      align-items: center;
+      width: 100%;
+      max-width: 1080px;
+    }
+
+    .tools-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tool-item {
+      background: rgba(20, 26, 36, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .tool-item.active {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--cyan);
+      color: #FFFFFF;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+      transform: translateX(6px);
+    }
+
+    .tool-item .badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tool-item.active .badge {
+      background: var(--cyan);
+      color: #000000;
+      font-weight: 700;
+    }
+
+    .code-view {
+      background: rgba(10, 14, 22, 0.95);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+
+    .code-header {
+      background: rgba(20, 26, 36, 0.9);
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .code-body {
+      padding: 24px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.7;
+      color: #CBD5E1;
+    }
+
+    .code-body .keyword { color: #F472B6; }
+    .code-body .func { color: #60A5FA; }
+    .code-body .string { color: #34D399; }
+    .code-body .comment { color: #64748B; font-style: italic; }
+    .code-body .highlight { background: rgba(0, 240, 255, 0.15); padding: 2px 6px; border-radius: 4px; color: var(--cyan); }
+
+    .status-bar-sim {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--emerald);
+    }
+
+    /* SCENE 4 — VERIFICATION */
+    .scene-4 {
+      width: 100%;
+      max-width: 960px;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      width: 100%;
+      margin-bottom: 36px;
+    }
+
+    .verify-card {
+      background: rgba(14, 18, 26, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.4s ease;
+    }
+
+    .verify-card.validated {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.05);
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.1);
+    }
+
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+    }
+
+    .verify-card.validated .card-title {
+      color: #FFFFFF;
+    }
+
+    .card-status {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .verify-card.validated .card-status {
+      color: var(--emerald);
+      font-weight: 600;
+    }
+
+    .big-verified-banner {
+      width: 100%;
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.15), rgba(0, 240, 255, 0.15));
+      border: 1px solid var(--emerald);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease;
+      box-shadow: 0 0 50px var(--emerald-glow);
+    }
+
+    .big-verified-banner.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .banner-text {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--emerald);
+      letter-spacing: 6px;
+    }
+
+    /* SCENE 5 — REVEAL & CTA */
+    .scene-5 {
+      text-align: center;
+    }
+
+    .scene-5 .final-title {
+      font-size: 84px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      color: #FFFFFF;
+      margin-bottom: 8px;
+      text-shadow: 0 0 60px rgba(0, 240, 255, 0.3);
+    }
+
+    .scene-5 .final-tagline {
+      font-size: 28px;
+      font-weight: 500;
+      color: var(--cyan);
+      letter-spacing: 4px;
+      margin-bottom: 40px;
+      font-family: var(--font-mono);
+    }
+
+    .pillars-row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .pillar-item {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: #94A3B8;
+      background: rgba(20, 26, 36, 0.8);
+      border: 1px solid var(--border-color);
+      padding: 12px 24px;
+      border-radius: 10px;
+    }
+
+    .final-cta {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--cyan);
+      padding: 16px 40px;
+      border-radius: 14px;
+      box-shadow: 0 0 40px var(--cyan-glow);
+    }
+
+    .cta-label {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .cta-url {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 1px;
+    }
+
+    /* Bottom Control Bar */
+    .controls-bar {
+      margin-top: 24px;
+      width: 1280px;
+      background: #0B0E14;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .btn-play {
+      background: var(--cyan);
+      color: #000000;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-play:hover {
+      box-shadow: 0 0 20px var(--cyan);
+      transform: scale(1.02);
+    }
+
+    .timeline-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .timeline-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .timeline-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--cyan), var(--emerald));
+      transition: width 0.1s linear;
+    }
+
+    .timeline-markers {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .marker.active {
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    .audio-toggle {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .audio-toggle.active {
+      border-color: var(--emerald);
+      color: var(--emerald);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 15-SECOND STAGE WRAPPER -->
+  <div class="stage-wrapper" id="stage">
+    
+    <!-- Background Elements -->
+    <div class="grid-bg"></div>
+    <div class="vignette"></div>
+    <canvas id="network-canvas" width="1280" height="720"></canvas>
+
+    <!-- SCENE 1 (0s - 3s): INITIALIZATION -->
+    <div class="scene scene-1 active" id="scene-1">
+      <div class="title-badge">
+        <div class="pulse-dot"></div>
+        <span>SYSTEM INITIALIZING</span>
+      </div>
+      <h1 class="brand-title">DAX Agent</h1>
+      <div class="brand-sub">AI & Agent Engineer</div>
+      <div class="status-tag">SAFE CLIENT-SIDE SIMULATION</div>
+    </div>
+
+    <!-- SCENE 2 (3s - 6s): PIPELINE -->
+    <div class="scene scene-2" id="scene-2">
+      <div class="goal-panel">
+        <div class="goal-header">
+          <span>▶ INGESTED GOAL</span>
+        </div>
+        <div class="goal-text">"Analyze a Python function and identify possible issues."</div>
+      </div>
+
+      <div class="pipeline-container">
+        <div class="pipeline-node" id="p-node-1">
+          <div class="node-box">GOAL</div>
+        </div>
+        <div class="pipeline-connector"><div class="progress" id="p-conn-1"></div></div>
+        
+        <div class="pipeline-node" id="p-node-2">
+          <div class="node-box">PLAN</div>
+        </div>
+        <div class="pipeline-connector"><div class="progress" id="p-conn-2"></div></div>
+
+        <div class="pipeline-node" id="p-node-3">
+          <div class="node-box">MEMORY</div>
+        </div>
+        <div class="pipeline-connector"><div class="progress" id="p-conn-3"></div></div>
+
+        <div class="pipeline-node" id="p-node-4">
+          <div class="node-box">TOOLS</div>
+        </div>
+        <div class="pipeline-connector"><div class="progress" id="p-conn-4"></div></div>
+
+        <div class="pipeline-node" id="p-node-5">
+          <div class="node-box">EXECUTE</div>
+        </div>
+        <div class="pipeline-connector"><div class="progress" id="p-conn-5"></div></div>
+
+        <div class="pipeline-node" id="p-node-6">
+          <div class="node-box">VERIFY</div>
+        </div>
+        <div class="pipeline-connector"><div class="progress" id="p-conn-6"></div></div>
+
+        <div class="pipeline-node" id="p-node-7">
+          <div class="node-box">RESULT</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 3 (6s - 9s): DEVELOPER TOOLING -->
+    <div class="scene scene-3" id="scene-3">
+      <div class="tools-sidebar">
+        <div class="tool-item active" id="tool-ast">
+          <span>AST ANALYZER</span>
+          <span class="badge">ACTIVE</span>
+        </div>
+        <div class="tool-item" id="tool-diff">
+          <span>DIFF ENGINE</span>
+          <span class="badge">STANDBY</span>
+        </div>
+        <div class="tool-item" id="tool-policy">
+          <span>POLICY VALIDATOR</span>
+          <span class="badge">STANDBY</span>
+        </div>
+        <div class="tool-item" id="tool-sandbox">
+          <span>SANDBOX CHECK</span>
+          <span class="badge">STANDBY</span>
+        </div>
+        <div class="tool-item" id="tool-audit">
+          <span>AUDIT LOGGER</span>
+          <span class="badge">STANDBY</span>
+        </div>
+      </div>
+
+      <div class="code-view">
+        <div class="code-header">
+          <span>IN-MEMORY AST ANALYSIS</span>
+          <span>PYTHON 3.10 AST</span>
+        </div>
+        <div class="code-body">
+          <span class="keyword">def</span> <span class="func">calculate_metrics</span>(values: list) -> dict:<br>
+          &nbsp;&nbsp;<span class="comment"># In-memory parsing without remote execution</span><br>
+          &nbsp;&nbsp;total = <span class="func">sum</span>(values)<br>
+          &nbsp;&nbsp;avg = total / <span class="func">len</span>(values) <span class="keyword">if</span> values <span class="keyword">else</span> 0.0<br>
+          &nbsp;&nbsp;<span class="keyword">return</span> {<span class="string">"total"</span>: total, <span class="string">"average"</span>: avg}<br>
+          <br>
+          <div class="status-bar-sim">
+            <span>APPROVAL GATE: GRANTED</span>
+            <span class="highlight">0 SYNTAX ERRORS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 4 (9s - 12s): VERIFICATION -->
+    <div class="scene scene-4" id="scene-4">
+      <div class="cards-grid">
+        <div class="verify-card" id="vcard-1">
+          <div class="card-title">SYNTAX</div>
+          <div class="card-status" id="vstat-1">PENDING...</div>
+        </div>
+        <div class="verify-card" id="vcard-2">
+          <div class="card-title">POLICY</div>
+          <div class="card-status" id="vstat-2">PENDING...</div>
+        </div>
+        <div class="verify-card" id="vcard-3">
+          <div class="card-title">SANDBOX</div>
+          <div class="card-status" id="vstat-3">PENDING...</div>
+        </div>
+        <div class="verify-card" id="vcard-4">
+          <div class="card-title">INTEGRITY</div>
+          <div class="card-status" id="vstat-4">PENDING...</div>
+        </div>
+      </div>
+
+      <div class="big-verified-banner" id="verified-banner">
+        <span class="banner-text">VERIFIED</span>
+      </div>
+    </div>
+
+    <!-- SCENE 5 (12s - 15s): REVEAL & CTA -->
+    <div class="scene scene-5" id="scene-5">
+      <h1 class="final-title">DAX Agent</h1>
+      <div class="final-tagline">Plan. Act. Verify.</div>
+
+      <div class="pillars-row">
+        <div class="pillar-item">Local-first AI agents</div>
+        <div class="pillar-item">Developer tools</div>
+        <div class="pillar-item">Safe automation</div>
+      </div>
+
+      <div class="final-cta">
+        <span class="cta-label">Explore DAX Agent</span>
+        <span class="cta-url">dax0056.github.io/lab</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CONTROL PANEL -->
+  <div class="controls-bar">
+    <button class="btn-play" id="btn-play">
+      <span id="play-icon">▶</span>
+      <span id="play-text">PLAY DEMO</span>
+    </button>
+
+    <div class="timeline-container">
+      <div class="timeline-track" id="timeline-track">
+        <div class="timeline-fill" id="timeline-fill"></div>
+      </div>
+      <div class="timeline-markers">
+        <span class="marker" id="m-1">0s: INIT</span>
+        <span class="marker" id="m-2">3s: PIPELINE</span>
+        <span class="marker" id="m-3">6s: TOOLS</span>
+        <span class="marker" id="m-4">9s: VERIFY</span>
+        <span class="marker" id="m-5">12s: REVEAL</span>
+        <span>15s</span>
+      </div>
+    </div>
+
+    <button class="audio-toggle" id="btn-audio">AUDIO: OFF</button>
+  </div>
+
+  <script>
+    // --- Canvas Particle Network Initialization ---
+    const canvas = document.getElementById('network-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    let particles = [];
+    const particleCount = 45;
+
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        radius: Math.random() * 2 + 1
+      });
+    }
+
+    function renderCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw Connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 125) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(0, 240, 255, ${0.15 * (1 - dist / 125)})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw Nodes
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.6)';
+        ctx.fill();
+      });
+
+      requestAnimationFrame(renderCanvas);
+    }
+    renderCanvas();
+
+    // --- Web Audio Synth Ambience ---
+    let audioCtx = null;
+    let isAudioEnabled = false;
+
+    function playSynthTone(freq, duration, gainValue = 0.05) {
+      if (!isAudioEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        
+        gain.gain.setValueAtTime(gainValue, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    document.getElementById('btn-audio').addEventListener('click', () => {
+      isAudioEnabled = !isAudioEnabled;
+      const btn = document.getElementById('btn-audio');
+      if (isAudioEnabled) {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        btn.innerText = 'AUDIO: ON';
+        btn.classList.add('active');
+        playSynthTone(220, 1.5, 0.1);
+      } else {
+        btn.innerText = 'AUDIO: OFF';
+        btn.classList.remove('active');
+      }
+    });
+
+    // --- 15-Second Timeline Animation Engine ---
+    const TOTAL_DURATION = 15.0; // 15 Seconds
+    let currentTime = 0;
+    let isPlaying = false;
+    let animationTimer = null;
+    let lastTimestamp = null;
+
+    const scenes = {
+      1: document.getElementById('scene-1'),
+      2: document.getElementById('scene-2'),
+      3: document.getElementById('scene-3'),
+      4: document.getElementById('scene-4'),
+      5: document.getElementById('scene-5')
+    };
+
+    function showScene(sceneNum) {
+      Object.keys(scenes).forEach(key => {
+        scenes[key].classList.toggle('active', parseInt(key) === sceneNum);
+      });
+    }
+
+    function updateTimeline(time) {
+      const progress = (time / TOTAL_DURATION) * 100;
+      document.getElementById('timeline-fill').style.width = `${progress}%`;
+
+      // Update Marker Highlights
+      document.getElementById('m-1').classList.toggle('active', time >= 0 && time < 3);
+      document.getElementById('m-2').classList.toggle('active', time >= 3 && time < 6);
+      document.getElementById('m-3').classList.toggle('active', time >= 6 && time < 9);
+      document.getElementById('m-4').classList.toggle('active', time >= 9 && time < 12);
+      document.getElementById('m-5').classList.toggle('active', time >= 12);
+
+      // --- Scene Logic ---
+      // Scene 1: 0s - 3s
+      if (time >= 0 && time < 3) {
+        showScene(1);
+      }
+      
+      // Scene 2: 3s - 6s (Pipeline Flow)
+      else if (time >= 3 && time < 6) {
+        showScene(2);
+        const pProgress = (time - 3) / 3.0; // 0 to 1
+
+        const steps = 6;
+        for (let i = 1; i <= 7; i++) {
+          const node = document.getElementById(`p-node-${i}`);
+          const threshold = (i - 1) / steps;
+          if (pProgress >= threshold) {
+            node.classList.add('active');
+            if (i > 1) document.getElementById(`p-node-${i-1}`).classList.add('completed');
+          } else {
+            node.classList.remove('active', 'completed');
+          }
+        }
+
+        for (let i = 1; i <= 6; i++) {
+          const conn = document.getElementById(`p-conn-${i}`);
+          const connStart = (i - 1) / steps;
+          const connEnd = i / steps;
+          if (pProgress >= connEnd) {
+            conn.style.width = '100%';
+          } else if (pProgress > connStart) {
+            const fillPct = ((pProgress - connStart) / (connEnd - connStart)) * 100;
+            conn.style.width = `${fillPct}%`;
+          } else {
+            conn.style.width = '0%';
+          }
+        }
+      }
+
+      // Scene 3: 6s - 9s (Developer Tooling)
+      else if (time >= 6 && time < 9) {
+        showScene(3);
+        const toolProgress = time - 6;
+        if (toolProgress > 1.5) {
+          document.getElementById('tool-ast').classList.remove('active');
+          document.getElementById('tool-diff').classList.add('active');
+        } else {
+          document.getElementById('tool-ast').classList.add('active');
+          document.getElementById('tool-diff').classList.remove('active');
+        }
+      }
+
+      // Scene 4: 9s - 12s (Verification)
+      else if (time >= 9 && time < 12) {
+        showScene(4);
+        const vTime = time - 9;
+
+        const cards = [
+          { id: 1, delay: 0.3 },
+          { id: 2, delay: 0.7 },
+          { id: 3, delay: 1.1 },
+          { id: 4, delay: 1.5 }
+        ];
+
+        cards.forEach(c => {
+          const card = document.getElementById(`vcard-${c.id}`);
+          const stat = document.getElementById(`vstat-${c.id}`);
+          if (vTime >= c.delay) {
+            card.classList.add('validated');
+            stat.innerText = 'VALIDATED IN SIMULATION';
+          } else {
+            card.classList.remove('validated');
+            stat.innerText = 'PENDING...';
+          }
+        });
+
+        const banner = document.getElementById('verified-banner');
+        if (vTime >= 2.0) {
+          banner.classList.add('show');
+        } else {
+          banner.classList.remove('show');
+        }
+      }
+
+      // Scene 5: 12s - 15s (Final Reveal)
+      else if (time >= 12) {
+        showScene(5);
+      }
+    }
+
+    function tick(timestamp) {
+      if (!isPlaying) return;
+      if (!lastTimestamp) lastTimestamp = timestamp;
+
+      const delta = (timestamp - lastTimestamp) / 1000.0;
+      lastTimestamp = timestamp;
+
+      currentTime += delta;
+
+      if (currentTime >= TOTAL_DURATION) {
+        currentTime = TOTAL_DURATION;
+        pause();
+      }
+
+      updateTimeline(currentTime);
+
+      if (isPlaying) {
+        requestAnimationFrame(tick);
+      }
+    }
+
+    function play() {
+      if (currentTime >= TOTAL_DURATION) currentTime = 0;
+      isPlaying = true;
+      lastTimestamp = null;
+      document.getElementById('play-icon').innerText = '❚❚';
+      document.getElementById('play-text').innerText = 'PAUSE';
+      requestAnimationFrame(tick);
+    }
+
+    function pause() {
+      isPlaying = false;
+      document.getElementById('play-icon').innerText = '▶';
+      document.getElementById('play-text').innerText = 'PLAY DEMO';
+    }
+
+    document.getElementById('btn-play').addEventListener('click', () => {
+      if (isPlaying) pause();
+      else play();
+    });
+
+    document.getElementById('timeline-track').addEventListener('click', (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      currentTime = pct * TOTAL_DURATION;
+      updateTimeline(currentTime);
+    });
+
+    // Auto Start on Load
+    updateTimeline(0);
+    setTimeout(() => play(), 500);
+  </script>
+</body>
+</html>
