@@ -22,6 +22,24 @@ export interface AgentToolInfo {
   verificationCheck: string;
 }
 
+export interface DiffLine {
+  type: 'context' | 'add' | 'remove' | 'header';
+  content: string;
+}
+
+export interface ReasoningStep {
+  label: string;
+  detail: string;
+}
+
+export interface VerificationChecks {
+  syntax: string;
+  policy: string;
+  sandbox: string;
+  integrity: string;
+  passed: boolean;
+}
+
 export interface LabStage {
   id: 'goal' | 'plan' | 'memory' | 'tools' | 'execute' | 'verify' | 'result';
   name: string;
@@ -36,6 +54,10 @@ export interface LabStage {
   memorySnapshot?: AgentMemoryState;
   activeToolId?: string;
   verificationStatus: 'idle' | 'processing' | 'verified' | 'passed';
+  reasoningTrace?: ReasoningStep[];
+  whyDecision?: string;
+  diffLines?: DiffLine[];
+  verificationChecks?: VerificationChecks;
 }
 
 export interface LabScenario {
@@ -493,6 +515,19 @@ export const LAB_SCENARIOS: LabScenario[] = [
         summary: 'Selected tool: Diff Engine (PatchEngine.dry_run).',
         detail: 'Generating exact context matching unified diff hunk.',
         codeSnippet: '--- a/db/connector.py\n+++ b/db/connector.py\n@@ -24,3 +24,5 @@\n-    time.sleep(1)\n+    delay = min(30.0, (2.0 ** attempt) + random.uniform(0, 0.5))\n+    logger.info(f"Retrying in {delay:.2f}s...")\n+    time.sleep(delay)',
+        diffLines: [
+          { type: 'header', content: '--- a/db/connector.py' },
+          { type: 'header', content: '+++ b/db/connector.py' },
+          { type: 'header', content: '@@ -24,3 +24,5 @@' },
+          { type: 'context', content: '    for attempt in range(max_retries):' },
+          { type: 'context', content: '        try:' },
+          { type: 'remove', content: '-           time.sleep(1)' },
+          { type: 'add', content: "+           delay = min(30.0, (2.0 ** attempt) + random.uniform(0, 0.5))" },
+          { type: 'add', content: '+           logger.info(f\'Retrying in {delay:.2f}s...\')' },
+          { type: 'add', content: '+           time.sleep(delay)' },
+          { type: 'context', content: '        except ConnectionError:' },
+          { type: 'context', content: '            continue' }
+        ],
         consoleLogs: [
           { timestamp: '00:00.69', level: 'INFO', event: 'TOOL_SELECTED', message: 'Tool selected: Diff Engine' }
         ],
